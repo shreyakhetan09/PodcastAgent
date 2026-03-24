@@ -7,22 +7,36 @@ One `LlmAgent` driving ingest + transcribe across 50 feeds creates serial I/O, l
 ---
 
 ## Three-tier ADK architecture
-
-### Tier 1 — Coordinator (`SequentialAgent`)
-
-Validate all 50 URLs (format, denylist, dedupe). Shard into fixed batches (e.g. 5×10 feeds). Enqueue work and gate the synthesizer until every batch has written results to durable storage (object store or queue ACK). Partial failures: retry or re-queue one batch without blocking the others; synthesizer runs only when the manifest is complete or you've applied an explicit "best effort" policy.
-
-`SequentialAgent` matches a morning job: *validate → shard → drain batches → synthesize once*.
-
-### Tier 2 — Workers (parallel; no LLM)
-
-Goal: zero model calls here — ~49 fewer API request patterns per run than "one agent per feed." Each worker runs the same deterministic chain this repo encodes: RSS → bounded download → FFmpeg `-t` trim (wall-clock 3–5 min) → Whisper. Concurrency: use a pool (e.g. 10–20 workers for I/O-bound fetch; 5–8 for Whisper so CPU/RAM don't saturate). Fifty logical tasks can be multiplexed across that pool — not 50 unbounded threads.
-
-`ParallelAgent` in ADK is for parallel child agents. Here, workers are often pure Python + queues (or thin ADK agents with tools only and no `generate`). Use `ParallelAgent` when you want first-class ADK observability across branches; the key design point is no LLM at this tier.
-
-### Tier 3 — Synthesizer (single `LlmAgent`)
-
-Input: the 50 structured JSON blobs from storage (metadata + intro transcripts). Output: one Markdown file (`intelligence_briefing.md`), including per-show sections and Cross-Pollination. Backend: same idea as this repo — `gemini-2.0-flash` or `groq/...` via `LiteLlm`, controlled by env (`use_groq_only`). That flag is a deployment choice, not automatic runtime failover unless you add a circuit-breaker. Context: fifty intros can be tens of thousands of tokens depending on length. If you approach TPM or context caps, use map-reduce (e.g. summarize batches of 10, then one final synthesis) — still far fewer LLM calls than per-feed agents.
+ 
+## Tier 1 — Coordinator (`SequentialAgent`)
+ 
+* Validate all 50 URLs (format, denylist, dedupe)
+* Shard into fixed batches (e.g. 5×10 feeds)
+* Enqueue work and gate the synthesizer until every batch has written results to durable storage (object store or queue ACK)
+* Partial failures: retry or re-queue one batch without blocking the others
+* Synthesizer runs only when the manifest is complete or you've applied an explicit "best effort" policy
+* `SequentialAgent` matches a morning job: validate → shard → drain batches → synthesize once
+ 
+## Tier 2 — Workers (parallel; no LLM)
+ 
+* Goal: zero model calls here (~49 fewer API request patterns per run than "one agent per feed")
+* Each worker runs the same deterministic chain: RSS → bounded download → FFmpeg `-t` trim (wall-clock 3–5 min) → Whisper
+* Use a pool (e.g. 10–20 workers for I/O-bound fetch; 5–8 for Whisper so CPU/RAM don't saturate)
+* Fifty logical tasks can be multiplexed across that pool, not 50 unbounded threads
+* `ParallelAgent` in ADK is for parallel child agents
+* Workers here are often pure Python + queues (or thin ADK agents with tools only and no `generate`)
+* Use `ParallelAgent` when you want first-class ADK observability across branches
+* Key design point: no LLM at this tier
+ 
+## Tier 3 — Synthesizer (single `LlmAgent`)
+ 
+* Input: 50 structured JSON blobs from storage (metadata + intro transcripts)
+* Output: one Markdown file (`intelligence_briefing.md`) including per-show sections and Cross-Pollination
+* Backend: `gemini-2.0-flash` or `groq/...` via `LiteLlm`, controlled by env (`use_groq_only`)
+* `use_groq_only` is a deployment choice, not automatic runtime failover (add a circuit-breaker for that)
+* Fifty intros can be tens of thousands of tokens depending on length
+* If you approach TPM or context caps, use map-reduce (e.g. summarize batches of 10, then one final synthesis)
+* Map-reduce still produces far fewer LLM calls than per-feed agents
 
 ---
 
