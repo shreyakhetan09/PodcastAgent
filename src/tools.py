@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -95,13 +96,12 @@ def ingest_latest_episodes(
     return [by_url[u] for u in feed_urls]
 
 
-def _download_audio_prefix(audio_url: str, max_minutes: int) -> str:
-    """Stream-download only the first ~``max_minutes`` of audio to a temp file; return its path."""
-    max_bytes = max_minutes * 60 * 32_000
-    response = requests.get(audio_url, stream=True, timeout=60)
+def _download_audio_bytes(audio_url: str, max_bytes: int) -> str:
+    """Stream audio into a temp file, stopping after ``max_bytes`` (enough payload for FFmpeg to trim)."""
+    response = requests.get(audio_url, stream=True, timeout=120)
     response.raise_for_status()
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".audio") as temp_audio:
         bytes_written = 0
         for chunk in response.iter_content(chunk_size=64 * 1024):
             if not chunk:
@@ -113,20 +113,76 @@ def _download_audio_prefix(audio_url: str, max_minutes: int) -> str:
         return temp_audio.name
 
 
-def transcribe_intro_clip(audio_url: str, whisper_model_name: str = "tiny", max_minutes: int = 4) -> str:
-    """Transcription: stream only the first ``max_minutes`` (3–5) of audio; Whisper tiny/base."""
-    _ensure_ffmpeg_on_path()
-    audio_path = _download_audio_prefix(audio_url=audio_url, max_minutes=max_minutes)
+def _ffmpeg_trim_to_wav(input_path: str, max_seconds: int) -> Optional[str]:
+    """Decode/trim the first ``max_seconds`` of media to 16 kHz mono WAV (wall-clock accurate vs byte caps)."""
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    out_fd, out_path = tempfile.mkstemp(suffix=".wav")
+    os.close(out_fd)
+    cmd = [
+        ffmpeg_exe,
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        input_path,
+        "-t",
+        str(max_seconds),
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-acodec",
+        "pcm_s16le",
+        out_path,
+    ]
     try:
+        subprocess.run(cmd, check=True, capture_output=True, timeout=180)
+        return out_path
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+        if os.path.isfile(out_path):
+            try:
+                os.remove(out_path)
+            except OSError:
+                pass
+        return None
+
+
+def transcribe_intro_clip(audio_url: str, whisper_model_name: str = "tiny", max_minutes: int = 4) -> str:
+    """Transcription: wall-clock intro clip (``max_minutes``), then Whisper.
+
+    Downloads a bounded prefix of the remote file, then **FFmpeg ``-t``** trims to exact duration—avoids
+    VBR/variable-byte-rate skew from naive byte budgets alone. If FFmpeg fails, falls back to the raw prefix.
+    """
+    _ensure_ffmpeg_on_path()
+    max_seconds = int(max_minutes * 60)
+    # Generous byte ceiling so the partial file usually contains ≥ max_seconds of audio across bitrates.
+    download_cap = max(10_000_000, max_seconds * 96_000)
+
+    raw_path = _download_audio_bytes(audio_url, download_cap)
+    trimmed_path: Optional[str] = None
+    try:
+        trimmed_path = _ffmpeg_trim_to_wav(raw_path, max_seconds)
+        whisper_input = trimmed_path or raw_path
+
         model = whisper.load_model(whisper_model_name)
-        result = model.transcribe(audio_path, fp16=False)
+        result = model.transcribe(whisper_input, fp16=False)
         transcript = (result.get("text", "") or "").strip()
         if not transcript:
             return "No transcript extracted from intro clip."
         return transcript
     finally:
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
+        if trimmed_path and os.path.isfile(trimmed_path):
+            try:
+                os.remove(trimmed_path)
+            except OSError:
+                pass
+        if os.path.isfile(raw_path):
+            try:
+                os.remove(raw_path)
+            except OSError:
+                pass
 
 
 def transcribe_all_parallel(

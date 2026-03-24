@@ -80,10 +80,23 @@ def _apply_auth_env(settings: Settings) -> None:
         os.environ["GEMINI_API_KEY"] = settings.gemini_api_key
 
 
-def _pick_longest_model_turn(chunks: list[str]) -> str:
+def _pick_final_briefing_text(chunks: list[str], min_substantial_chars: int = 400) -> str:
+    """Choose assistant Markdown from streamed ADK events.
+
+    The last **non-partial** chunk is usually the final briefing after tool calls. If it looks like a
+    short stub (e.g. a preamble), fall back to the **longest** chunk. This is a heuristic; unusual
+    provider chunking could still require tuning ``min_substantial_chars``.
+    """
     if not chunks:
         return ""
-    return max(chunks, key=len).strip()
+    stripped = [c.strip() for c in chunks if c.strip()]
+    if not stripped:
+        return ""
+    last = stripped[-1]
+    if len(last) >= min_substantial_chars:
+        return last
+    longest = max(stripped, key=len)
+    return longest if len(longest) > len(last) else last
 
 
 async def _run_adk_agent(
@@ -167,7 +180,7 @@ async def _run_adk_agent(
     except Exception:
         pass
 
-    out = _pick_longest_model_turn(text_chunks)
+    out = _pick_final_briefing_text(text_chunks)
     if not out:
         raise RuntimeError("ADK finished with no model text; check API keys and logs above.")
     return out

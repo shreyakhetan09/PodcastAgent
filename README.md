@@ -280,6 +280,15 @@ Final Felix/
 
 ---
 
+## Implementation notes
+
+| Topic | Behavior |
+| --- | --- |
+| **Intro clip duration** | Audio is **downloaded with a byte cap**, then **FFmpeg `-t`** decodes/trim to a **wall-clock** limit (3–5 minutes, from `Settings`). That avoids relying on a fixed bytes-per-second guess for **variable-bitrate** streams. If FFmpeg fails on a rare container, transcription falls back to the **raw downloaded prefix** (legacy behavior). |
+| **Final briefing text** | ADK may emit several assistant text chunks (streaming, interim thoughts). The runner prefers the **last complete chunk** if it looks substantial; otherwise it falls back to the **longest** chunk. Unusual provider chunking can be tuned via `min_substantial_chars` in `_pick_final_briefing_text` (`src/agent_pipeline.py`). |
+
+---
+
 ## Troubleshooting
 
 | Symptom | Likely cause | What to try |
@@ -294,8 +303,10 @@ Final Felix/
 
 ## Further reading
 
-- **Scaling & rate limits:** [`SCALING_NOTES.md`](SCALING_NOTES.md)
+- **Scaling & rate limits:** [`SCALING_NOTES.md`](SCALING_NOTES.md) (includes ADK `SequentialAgent` / `ParallelAgent` patterns and provider links)
 - **Google ADK (Python):** [ADK documentation](https://google.github.io/adk-docs/)
+- **Gemini quotas:** [Gemini API rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
+- **Groq quotas:** [Groq rate limits](https://console.groq.com/docs/rate-limits)
 - **Assignment deliverables:** public repo link, sample `intelligence_briefing.md`, and scaling write-up in `SCALING_NOTES.md`
 
 ---
