@@ -1,5 +1,7 @@
 # Podcast Intelligence Agent
 
+**Repo:** [shreyakhetan09/PodcastAgent](https://github.com/shreyakhetan09/PodcastAgent)
+
 **Multi-source podcast briefing pipeline** built on **Google Agent Development Kit (ADK)** in Python. The agent orchestrates RSS ingestion and Whisper transcription via **FunctionTools**, then produces a structured **Markdown intelligence briefing** saved as `intelligence_briefing.md`.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/downloads/)
