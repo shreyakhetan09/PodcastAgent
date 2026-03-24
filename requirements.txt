@@ -1,0 +1,8 @@
+google-adk
+litellm
+google-genai
+feedparser
+requests
+python-dotenv
+openai-whisper
+imageio-ffmpeg
