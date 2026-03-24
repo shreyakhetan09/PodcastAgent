@@ -244,20 +244,6 @@ python main.py --debug-env
 - Call **`run_pipeline(settings, feed_urls=[...])`** from your own script with exactly **three** URLs.
 
 ---
-
-## Briefing output structure
-
-The model is instructed (`src/prompts.py`) to produce:
-
-1. **Title** `# AI / ML / Learning — Podcast Intelligence Briefing` and a **scope blockquote**.
-2. **Three numbered show sections** (`## 1. …` … `## 3. …`) with metadata table, episode vs series, two-line summary, two intro bullets, tone/audience, similar podcasts, and **`---`** between major show blocks.
-3. **`## Cross-pollination (AI/ML/tech landscape)`** with a comparison table and subsections (**Common themes**, **Divergence**, **One surprising contrast**).
-4. **`## Product and R&D implications`** (bullet list).
-
-Evidence is **RSS + intro transcripts only**; broader claims should be marked **(inference)** where appropriate.
-
----
-
 ## Repository layout
 
 ```
