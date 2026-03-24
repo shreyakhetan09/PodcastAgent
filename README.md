@@ -38,58 +38,6 @@
 Secrets stay in **`.env`** (ignored by git). Use **`.env.example`** as the template.
 
 ---
-
-## Architecture
-
-High-level view: **CLI → ADK runner → tools → LLM → Markdown file**.
-
-```mermaid
-flowchart TB
-    subgraph Client[" "]
-        CLI["main.py CLI"]
-    end
-
-    subgraph ADK["Google ADK"]
-        RUN["InMemoryRunner"]
-        AG["LlmAgent"]
-        FT1["FunctionTool: ingest_latest_podcast_episodes"]
-        FT2["FunctionTool: transcribe_intro_snippets"]
-        RUN --> AG
-        AG --> FT1
-        AG --> FT2
-    end
-
-    subgraph Muscle["Deterministic tools (src/tools.py)"]
-        RSS["feedparser + HTTP"]
-        WH["openai-whisper + ffmpeg"]
-        RSS --- WH
-    end
-
-    subgraph Model["Model"]
-        GEM["Gemini API"]
-        GR["Groq via LiteLLm"]
-    end
-
-    subgraph Out["Output"]
-        MD["intelligence_briefing.md"]
-    end
-
-    CLI --> RUN
-    FT1 --> RSS
-    FT2 --> WH
-    AG --> GEM
-    AG --> GR
-    AG --> MD
-
-    style ADK fill:#E8F0FE,stroke:#4285F4,stroke-width:2px
-    style Muscle fill:#E6F4EA,stroke:#34A853,stroke-width:2px
-    style Model fill:#FEF7E0,stroke:#F9AB00,stroke-width:2px
-    style Out fill:#F3E8FD,stroke:#A142F4,stroke-width:2px
-    style Client fill:#FCE8E6,stroke:#EA4335,stroke-width:2px
-```
-
----
-
 ## ADK execution model
 
 The **agent** receives system instructions (`src/prompts.py`) and a user message listing **three RSS URLs**. ADK’s runtime **binds** the two Python callables as tools, sends their **schemas** to the model, and **executes** tool calls when the model requests them. Results are fed back until the model emits the final Markdown.
