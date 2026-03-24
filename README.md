@@ -301,14 +301,5 @@ Final Felix/
 
 ---
 
-## Further reading
-
-- **Scaling & rate limits:** [`SCALING_NOTES.md`](SCALING_NOTES.md) (includes ADK `SequentialAgent` / `ParallelAgent` patterns and provider links)
-- **Google ADK (Python):** [ADK documentation](https://google.github.io/adk-docs/)
-- **Gemini quotas:** [Gemini API rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
-- **Groq quotas:** [Groq rate limits](https://console.groq.com/docs/rate-limits)
-- **Assignment deliverables:** public repo link, sample `intelligence_briefing.md`, and scaling write-up in `SCALING_NOTES.md`
-
----
 
 *Documentation version aligned with the codebase in this repository. For questions about ADK behavior, refer to the official ADK docs and release notes.*
