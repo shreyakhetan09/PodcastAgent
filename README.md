@@ -288,15 +288,3 @@ Final Felix/
 | **SSL / “Event loop is closed” after success** (older Python) | Async HTTP cleanup vs closed loop | Prefer **Python 3.10+**; code calls **`close_litellm_async_clients`** after `runner.close()` to reduce this on Groq. |
 | **Slow first run** | Whisper / PyTorch download | Normal; keep **`tiny`** model for speed. |
 | **401 / auth** | Truncated key in `.env` | If the key contains `#`, wrap in **double quotes** in `.env`. |
-
----
-
-## Further reading
-
-- **Scaling & rate limits:** [`SCALING_NOTES.md`](SCALING_NOTES.md)
-- **Google ADK (Python):** [ADK documentation](https://google.github.io/adk-docs/)
-- **Assignment deliverables:** public repo link, sample `intelligence_briefing.md`, and scaling write-up in `SCALING_NOTES.md`
-
----
-
-*Documentation version aligned with the codebase in this repository. For questions about ADK behavior, refer to the official ADK docs and release notes.*
