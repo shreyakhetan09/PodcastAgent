@@ -1,7 +1,5 @@
 # Scaling to 50 concurrent podcasts
 
-*Take-home answer:* If this ran every morning for **50 feeds**, how would you architect the **Google ADK** workflow, and how would you handle **transcription compute** and **LLM rate limits**?
-
 ---
 
 ## Why a flat single-agent design breaks
@@ -85,8 +83,6 @@ Official limits **change by model, project, and tier**. **Always** confirm live 
 
 ## Architecture diagram
 
-On **GitHub**, the diagram below renders with **colored tiers** (Mermaid). In plain text viewers you still have the section headers above.
-
 ```mermaid
 flowchart TB
     FEEDS(["50 RSS feeds"])
@@ -129,7 +125,3 @@ flowchart TB
     style T3 fill:#FFF8E1,stroke:#F57F17,stroke-width:2px
     style FILE fill:#E8EAF6,stroke:#3949AB,stroke-width:2px
 ```
-
----
-
-*This document merges a production-style 50-feed ADK layout with conservative claims: quota numbers and speedups must be validated against your provider account and measured cache behavior.*
