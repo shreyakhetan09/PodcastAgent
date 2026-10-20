@@ -1,8 +1,12 @@
 # Podcast Intelligence Agent
 
-**Repo:** [shreyakhetan09/PodcastAgent](https://github.com/shreyakhetan09/PodcastAgent)
+A **Google ADK** agent that pulls the latest episodes from RSS feeds,
+transcribes the intros with **Whisper**, and writes a structured Markdown
+briefing. The model decides when to call ingest vs transcribe; the tools do
+the deterministic work.
 
-**Multi-source podcast briefing pipeline** built on **Google Agent Development Kit (ADK)** in Python. The agent orchestrates RSS ingestion and Whisper transcription via **FunctionTools**, then produces a structured **Markdown intelligence briefing** saved as `intelligence_briefing.md`.
+**Use case.** A daily product / research briefing from three shows you
+already listen to — without sitting through the full audio.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Google ADK](https://img.shields.io/badge/framework-Google%20ADK-4285F4?style=flat)](https://github.com/google/adk-python)
@@ -15,7 +19,7 @@
 2. [Architecture](#architecture)
 3. [ADK execution model](#adk-execution-model)
 4. [End-to-end data flow](#end-to-end-data-flow)
-5. [Features & assignment mapping](#features--assignment-mapping)
+5. [Features](#features)
 6. [Installation](#installation)
 7. [Configuration](#configuration)
 8. [Usage](#usage)
@@ -119,17 +123,17 @@ flowchart LR
 
 ---
 
-## Features & assignment mapping
+## Features
 
-| Requirement | Where it lives |
+| Capability | Where it lives |
 | --- | --- |
-| **`google-adk`** | `LlmAgent`, `InMemoryRunner`, `FunctionTool` in `src/agent_pipeline.py` |
-| **Ingestion (3 RSS → latest episode + audio URL)** | `ingest_latest_podcast_episodes` → `src/tools.py::ingest_latest_episodes` |
-| **Transcription (3–5 min clip, Whisper tiny/base)** | `transcribe_intro_snippets` → `transcribe_all_parallel` / `transcribe_intro_clip` |
-| **Agent instructions & briefing layout** | `src/prompts.py` (`ADK_SYSTEM_INSTRUCTION`): per-show tables, episode vs series, cross-pollination table + subsections, product implications |
-| **Output file** | `intelligence_briefing.md` via `Settings.output_path` (`src/config.py`) |
-| **$0 / free tier** | Groq + `USE_GROQ_ONLY=1`, or Gemini with `GEMINI_API_KEY` |
-| **Scaling discussion (deliverable)** | `SCALING_NOTES.md` |
+| **Google ADK agent** | `LlmAgent`, `InMemoryRunner`, `FunctionTool` in `src/agent_pipeline.py` |
+| **RSS ingestion** | `ingest_latest_podcast_episodes` → `src/tools.py::ingest_latest_episodes` |
+| **Whisper transcription** (3–5 min intro clip) | `transcribe_intro_snippets` in `src/tools.py` |
+| **Briefing layout** | `src/prompts.py` — per-show tables, episode vs series, cross-show themes |
+| **Output** | `intelligence_briefing.md` via `Settings.output_path` |
+| **Free-tier backends** | Groq (`USE_GROQ_ONLY=1`) or Gemini (`GEMINI_API_KEY`) |
+| **Scale-out notes** | `SCALING_NOTES.md` |
 
 ---
 
@@ -138,7 +142,8 @@ flowchart LR
 **Python 3.10+** is recommended (ADK and asyncio behavior; avoids many 3.9 warnings).
 
 ```bash
-cd "/path/to/Final Felix"
+git clone https://github.com/shreyakhetan09/PodcastAgent.git
+cd PodcastAgent
 python3.10 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install --upgrade pip
@@ -195,7 +200,7 @@ python main.py --debug-env
 ## Repository layout
 
 ```
-Final Felix/
+PodcastAgent/
 ├── main.py                 # CLI entrypoint
 ├── requirements.txt
 ├── .env.example            # Template for secrets (no real keys)

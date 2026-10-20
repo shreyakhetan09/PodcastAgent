@@ -88,4 +88,4 @@ Official limits change by model, project, and tier. Always confirm live values: 
 | Download + FFmpeg | Bounded bytes + `-t` trim | 0 |
 | Whisper | Open weights, your CPU/GPU | 0 |
 | One (or few) LLM synthesis | Within free-tier quotas | 0 |
-| **Total** (assignment-style stack) | | **~0** |
+| **Total** (this stack) | | **~0** |
